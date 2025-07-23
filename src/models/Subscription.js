@@ -48,6 +48,7 @@ const subscriptionSchema = new mongoose.Schema(
       },
     },
     roiCredited: {
+      // Total ROI credited to the user
       type: Number,
       default: 0,
       min: 0,

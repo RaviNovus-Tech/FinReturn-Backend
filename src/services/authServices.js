@@ -15,8 +15,6 @@ import { ReferralCodeGenerator } from "../utils/RefferalCodeGenrate.js";
 export default class AuthService {
   async register(data) {
     try {
-      // this.validateRegistrationData(data);
-
       const { fullName, email, phone, password, walletAddress, referralCode } =
         data;
 
@@ -38,6 +36,7 @@ export default class AuthService {
         phone,
         walletAddress,
         referralCode: newUserReferralCode,
+
         referredBy: referrer?._id || null,
       };
 

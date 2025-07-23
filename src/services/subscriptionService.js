@@ -9,10 +9,8 @@ export default class SubscriptionService {
   async createSubscription(subscriptionData, paymentProof) {
     try {
       const { userId, packageId, amount, paymentDetails } = subscriptionData;
-
       // Validate user
       const user = await User.findById(userId);
-      console.log("user ", user);
 
       if (!user) {
         throw new ValidationError("User not found", "USER_NOT_FOUND", {
@@ -27,21 +25,54 @@ export default class SubscriptionService {
           packageId,
         });
       }
+      const existingSubscription = await Subscription.findOne({
+        userId,
+        packageId,
+      });
 
-      // Prepare subscription data
-      //   const subscription = new Subscription({
-      //     userId,
-      //     packageId,
-      //     amount,
-      //     paymentDetails: {
-      //       ...paymentDetails,
-      //       paymentProofUrl: paymentProof?.url || null, // Include Cloudinary URL if available
-      //     },
-      //   });
+      // if (existingSubscription) {
+      //   throw new ValidationError(
+      //     "User already has an active subscription for this package",
+      //     "ACTIVE_SUBSCRIPTION_EXISTS",
+      //     { userId, packageId }
+      //   );
+      // }
 
-      // Save subscription
-      //   await subscription.save();
-      return {};
+      if (paymentDetails.transactionId && !paymentProof) {
+        throw new ValidationError(
+          "Payment proof is required when transaction ID is provided",
+          "PAYMENT_PROOF_REQUIRED"
+        );
+      }
+
+      console.log(packageData); // TODO REMOVE
+
+      if (amount != packageData.amount) {
+        throw new ValidationError(
+          "Amount does not match the package price",
+          "AMOUNT_MISMATCH",
+          { amount, packagePrice: packageData.amount }
+        );
+      }
+
+      const subscription = new Subscription({
+        userId,
+        packageId,
+        amount,
+        startDate: new Date(),
+        endDate: new Date(
+          Date.now() + packageData.duration * 24 * 60 * 60 * 1000
+        ), // Assuming duration is in days
+
+        paymentDetails: {
+          method: paymentDetails.method,
+          transactionId: paymentDetails.transactionId,
+          paymentProof: paymentProof ? paymentProof.url : null, // Assuming paymentProof is an object with a url property
+          adminAccountDetails: paymentDetails.adminAccountDetails,
+        },
+      });
+      const savedSubscription = await subscription.save();
+      return savedSubscription;
     } catch (error) {
       console.error("Error creating subscription:", error);
       // Handle Mongoose-specific errors
@@ -50,8 +81,6 @@ export default class SubscriptionService {
         error.name === "CastError" ||
         error.code === 11000
       ) {
-        console.log(error);
-
         throw ErrorHandler.handleMongoError(error);
       }
 
@@ -72,7 +101,9 @@ export default class SubscriptionService {
 
   async getAllSubscriptions() {
     try {
-      const subscriptions = await Subscription.find();
+      const subscriptions = await Subscription.find()
+        .populate("userId")
+        .populate("packageId");
       return subscriptions;
     } catch (error) {
       // Handle Mongoose-specific errors
