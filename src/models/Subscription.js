@@ -31,7 +31,7 @@ const subscriptionSchema = new mongoose.Schema(
     paymentDetails: {
       method: {
         type: String,
-        enum: ["manual", "crypto"],
+        enum: ["bank", "crypto"],
         required: true,
       },
       transactionId: {

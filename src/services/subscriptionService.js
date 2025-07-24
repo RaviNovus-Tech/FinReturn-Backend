@@ -38,12 +38,12 @@ export default class SubscriptionService {
       //   );
       // }
 
-      if (paymentDetails.transactionId && !paymentProof) {
-        throw new ValidationError(
-          "Payment proof is required when transaction ID is provided",
-          "PAYMENT_PROOF_REQUIRED"
-        );
-      }
+      // if (paymentDetails.transactionId && !paymentProof) {
+      //   throw new ValidationError(
+      //     "Payment proof is required when transaction ID is provided",
+      //     "PAYMENT_PROOF_REQUIRED"
+      //   );
+      // }
 
       console.log(packageData); // TODO REMOVE
 

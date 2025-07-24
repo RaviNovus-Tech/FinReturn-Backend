@@ -28,8 +28,8 @@ const createSubscriptionValidator = [
   body("paymentDetails.method")
     .notEmpty()
     .withMessage("Payment method is required")
-    .isIn(["manual", "crypto"])
-    .withMessage("Payment method must be 'manual' or 'crypto'"),
+    .isIn(["bank", "crypto"])
+    .withMessage("Payment method must be 'bank' or 'crypto'"),
 
   body("paymentDetails.transactionId").optional().isString().trim(),
 
