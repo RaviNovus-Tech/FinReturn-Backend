@@ -16,6 +16,36 @@ export default class SubscriptionController {
     );
   });
 
+  getSubscriptionByUserId = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const subscription = await this.subscriptionService.getSubscriptionByUserId(
+      id
+    );
+    if (!subscription) {
+      return ResponseHandler.error(
+        res,
+        "Subscription not found for this user",
+        404
+      );
+    }
+    return ResponseHandler.success(
+      res,
+      subscription,
+      "Subscription retrieved successfully"
+    );
+  });
+
+  handleSubscriptionAction = asyncHandler(async (req, res) => {
+    const subscription =
+      await this.subscriptionService.handleSubscriptionAction(req.body);
+
+    return ResponseHandler.success(
+      res,
+      subscription,
+      "Subscription action handled successfully"
+    );
+  });
+
   createSubscription = asyncHandler(async (req, res) => {
     let paymentProof = null;
 

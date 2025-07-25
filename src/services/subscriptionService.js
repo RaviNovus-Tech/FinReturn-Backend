@@ -122,4 +122,57 @@ export default class SubscriptionService {
       );
     }
   }
+
+  async getSubscriptionByUserId(userId) {
+    try {
+      const subscription = await Subscription.findOne({ userId }).populate(
+        "packageId"
+      );
+      return subscription;
+    } catch (error) {
+      console.error("Error retrieving subscription:");
+      throw new AppError(
+        "Failed to retrieve subscription",
+        500,
+        ERROR_CODES.SERVER_ERROR,
+        { originalError: error.message }
+      );
+    }
+  }
+
+  async handleSubscriptionAction(body) {
+    try {
+      const { subscriptionId, status } = body;
+      console.log("Subscription ID:", subscriptionId, "Status:", status); // TODO REMOVE
+
+      const subscription = await Subscription.findById(subscriptionId);
+
+      if (!subscription) {
+        throw new ValidationError(
+          "Subscription not found",
+          "SUBSCRIPTION_NOT_FOUND",
+          {
+            subscriptionId,
+          }
+        );
+      }
+      subscription.status = status;
+      await subscription.save();
+
+      return subscription;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      console.error("Error handling subscription action:", error);
+      throw new AppError(
+        "Failed to handle subscription action",
+        500,
+        ERROR_CODES.SERVER_ERROR,
+        { originalError: error.message }
+      );
+    }
+  }
 }
+
+

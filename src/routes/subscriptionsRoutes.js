@@ -54,8 +54,20 @@ router.post(
   subscriptionController.createSubscription
 );
 
-// // 🔸 Get single subscription
-// router.get("/:id", subscriptionController.getSubscriptionById);
+router.put(
+  "/action",
+  [
+    body("subscriptionId").isMongoId().withMessage("Invalid Subscription ID"),
+    body("status")
+      .isIn(["pending", "active", "completed", "rejected"])
+      .withMessage("Invalid status"),
+  ],
+  handleValidationErrors,
+  subscriptionController.handleSubscriptionAction
+);
+
+/// 🔸 Get single subscription for user
+router.get("/:id", subscriptionController.getSubscriptionByUserId);
 
 // // 🔸 Update subscription
 // router.put("/:id", subscriptionController.updateSubscription);
