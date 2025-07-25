@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# AWS credentials
+.aws/credentials
+
+# Logs
+*.log
+
+# Editor files
+.vscode/
+.idea/

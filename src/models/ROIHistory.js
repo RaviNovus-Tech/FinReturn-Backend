@@ -1,29 +1,34 @@
+// models/roiHistory.model.ts
 import mongoose from "mongoose";
 
 const roiHistorySchema = new mongoose.Schema(
   {
+    subscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subscription",
+      required: true,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    investmentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Investment",
+    date: {
+      type: Date,
       required: true,
     },
     amount: {
       type: Number,
       required: true,
+      min: 0,
     },
-    date: {
-      type: Date,
-      default: Date.now,
-    },
-    status: {
+    note: {
       type: String,
-      enum: ["credited", "pending"],
-      default: "credited",
+      trim: true,
+    },
+    creditedByAdmin: {
+      type: Boolean,
+      default: true,
     },
   },
   {
