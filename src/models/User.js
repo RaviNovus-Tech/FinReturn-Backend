@@ -110,9 +110,7 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Indexes for performance (VERY IMPORTANT for production)
-userSchema.index({ email: 1 });
-userSchema.index({ referralCode: 1 });
+
 userSchema.index({ referredBy: 1 });
 userSchema.index({ createdAt: -1 });
 

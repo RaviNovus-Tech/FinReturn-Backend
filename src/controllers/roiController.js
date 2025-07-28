@@ -60,4 +60,28 @@ export default class ROIHistoryController {
       201
     );
   });
+
+  //used to remove roi history entry
+  deleteROIHistory = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const result = await this.service.deleteROIHistory(id);
+    return ResponseHandler.success(
+      res,
+      result,
+      "ROI history entry deleted successfully"
+    );
+  });
+
+  bulkDeleteROIHistory = asyncHandler(async (req, res) => {
+    const { ids } = req.body;
+
+    const result = await this.service.bulkDeleteROIHistory(ids);
+    return ResponseHandler.success(
+      res,
+      result,
+      "ROI history entries deleted successfully"
+    );
+  });
 }
+

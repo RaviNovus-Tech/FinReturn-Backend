@@ -79,4 +79,23 @@ router.post(
   handleValidationErrors,
   controller.creditBulkROI
 );
+
+
+router.delete(
+  "/bulk-delete",
+  [
+    body("ids")
+      .isArray({ min: 1 })
+      .withMessage("ids must be a non-empty array"),
+    body("ids.*")
+      .isMongoId()
+      .withMessage("Each id must be a valid MongoDB ObjectId"),
+  ],
+  handleValidationErrors,
+  controller.bulkDeleteROIHistory
+);
+
+router.delete("/:id", controller.deleteROIHistory);
+
+
 export default router;

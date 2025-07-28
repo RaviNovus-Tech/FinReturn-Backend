@@ -98,4 +98,65 @@ export default class ROIHistoryService {
       );
     }
   }
+
+  async deleteROIHistory(id) {
+    try {
+      const roi = await ROIHistory.findByIdAndDelete(id);
+      if (!roi) {
+        throw new AppError("ROI history not found", 404, ERROR_CODES.NOT_FOUND);
+      }
+      const subscription = await Subscription.findById(roi.subscriptionId);
+      if (!subscription) {
+        throw new ValidationError(
+          "Subscription not found",
+          "SUBSCRIPTION_NOT_FOUND",
+          { subscriptionId: roi.subscriptionId }
+        );
+      }
+      subscription.roiCredited -= roi.amount;
+      await subscription.save();
+      if (!subscription.roiCredited) {
+        subscription.roiCredited = 0;
+      }
+
+      return roi;
+    } catch (error) {
+      throw new AppError(
+        "Failed to delete ROI history",
+        500,
+        ERROR_CODES.SERVER_ERROR,
+        { originalError: error.message }
+      );
+    }
+  }
+
+  async bulkDeleteROIHistory(ids = []) {
+    const results = {
+      deleted: [],
+      failed: [],
+    };
+
+    for (const id of ids) {
+      try {
+        const deleted = await this.deleteROIHistory(id);
+        results.deleted.push(deleted._id);
+      } catch (err) {
+        results.failed.push({
+          id,
+          reason: err.message,
+        });
+      }
+    }
+
+    if (results.failed.length > 0) {
+      throw new AppError(
+        "Some ROI history deletions failed",
+        207, // Multi-Status response
+        ERROR_CODES.PARTIAL_SUCCESS,
+        results
+      );
+    }
+
+    return results;
+  }
 }
