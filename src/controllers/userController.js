@@ -10,4 +10,14 @@ export default class UserController {
     const users = await this.userService.getAllUsers();
     return ResponseHandler.success(res, users, "Users retrieved successfully");
   });
+
+  getUserAffiliatesByID = asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    const affiliates = await this.userService.getUserAffiliatesByID(userId);
+    return ResponseHandler.success(
+      res,
+      affiliates,
+      "User affiliates retrieved successfully"
+    );
+  });
 }

@@ -4,19 +4,14 @@ import { AppError, ValidationError } from "../utils/errors/errors.js";
 import User from "../models/User.js";
 import Package from "../models/Package.js";
 import { ErrorHandler } from "../utils/errors/ErrorHandler.js";
+import ReferralEarnings from "../models/ReferralEarnings.js";
 
 export default class SubscriptionService {
   async createSubscription(subscriptionData, paymentProof) {
     try {
       const { userId, packageId, amount, paymentDetails } = subscriptionData;
       // Validate user
-      const user = await User.findById(userId);
-
-      if (!user) {
-        throw new ValidationError("User not found", "USER_NOT_FOUND", {
-          userId,
-        });
-      }
+      const user = await this._validateUser(userId, packageId);
 
       // Validate package
       const packageData = await Package.findById(packageId);
@@ -25,27 +20,6 @@ export default class SubscriptionService {
           packageId,
         });
       }
-      const existingSubscription = await Subscription.findOne({
-        userId,
-        packageId,
-      });
-
-      // if (existingSubscription) {
-      //   throw new ValidationError(
-      //     "User already has an active subscription for this package",
-      //     "ACTIVE_SUBSCRIPTION_EXISTS",
-      //     { userId, packageId }
-      //   );
-      // }
-
-      // if (paymentDetails.transactionId && !paymentProof) {
-      //   throw new ValidationError(
-      //     "Payment proof is required when transaction ID is provided",
-      //     "PAYMENT_PROOF_REQUIRED"
-      //   );
-      // }
-
-      console.log(packageData); // TODO REMOVE
 
       if (amount != packageData.amount) {
         throw new ValidationError(
@@ -71,6 +45,19 @@ export default class SubscriptionService {
           adminAccountDetails: paymentDetails.adminAccountDetails,
         },
       });
+      user.hasSubscribed = true;
+      await user.save();
+
+      //if user is referred by another user, update referral earnings
+      if (user.referredBy) {
+        await this._handleAffiliateLogic(
+          user.referredBy,
+          user._id,
+          amount,
+          subscription._id
+        );
+      }
+
       const savedSubscription = await subscription.save();
       return savedSubscription;
     } catch (error) {
@@ -172,6 +159,77 @@ export default class SubscriptionService {
         { originalError: error.message }
       );
     }
+  }
+
+  async _validateUser(userId, packageId) {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new ValidationError("User not found", "USER_NOT_FOUND", {
+        userId,
+      });
+    }
+
+    // Check if user already has an active subscription
+    if (user.hasSubscribed) {
+      throw new ValidationError(
+        "User already has an active subscription",
+        "ACTIVE_SUBSCRIPTION_EXISTS",
+        { userId }
+      );
+    }
+
+    const existingSubscription = await Subscription.findOne({
+      userId,
+      packageId,
+    });
+
+    if (existingSubscription) {
+      throw new ValidationError(
+        "User already has an active subscription for this package",
+        "ACTIVE_SUBSCRIPTION_EXISTS",
+        { userId, packageId }
+      );
+    }
+
+    return user;
+  }
+
+  async _handleAffiliateLogic(
+    referredById,
+    referredId,
+    amount,
+    subscriptionId
+  ) {
+    const referredByUser = await User.findById(referredById);
+
+    if (!referredByUser) {
+      console.log(
+        "Referred by user not found, creating without referral earnings"
+      );
+      throw new ValidationError(
+        "Referred by user not found",
+        "REFERRER_NOT_FOUND",
+        { referredById }
+      );
+    }
+
+    const commissionAmount =
+      amount * process.env.REFERRAL_EARNINGS_PERCENTAGE || 0.1;
+    referredByUser.referralEarnings += commissionAmount; // Assuming 10% commission
+    await referredByUser.save();
+
+    //create referral earnings record
+    const referralEarnings = new ReferralEarnings({
+      referrerId: referredByUser._id,
+      referredUserId: referredId,
+      subscriptionId: subscriptionId,
+      commissionAmount: commissionAmount,
+      commissionPercentage: process.env.REFERRAL_EARNINGS_PERCENTAGE || 0.1,
+      status: "pending", // Initial status
+    });
+
+    await referralEarnings.save();
   }
 }
 

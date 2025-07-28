@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
+import Subscription from "./Subscription.js";
 
 const otpSchema = new mongoose.Schema(
   {
@@ -74,6 +75,10 @@ const userSchema = new mongoose.Schema(
       default: 0, // Total referral commissions earned
       min: 0,
     },
+    hasSubscribed: {
+      type: Boolean,
+      default: false, // Indicates if the user has an active subscription
+    },
 
     // Additional useful fields
     isActive: {
@@ -102,6 +107,12 @@ userSchema.pre("save", async function (next) {
     next();
   } catch (err) {
     next(err);
+  }
+});
+
+userSchema.post("findOneAndDelete", async function (doc) {
+  if (doc) {
+    await Subscription.deleteMany({ userId: doc._id });
   }
 });
 

@@ -18,4 +18,33 @@ export default class UserService {
       );
     }
   }
+
+  async getUserAffiliatesByID(userId) {
+    try {
+      const user = await User.findById(userId).populate("referredUsers");
+
+      if (!user) {
+        throw new AppError("User not found", 404, ERROR_CODES.NOT_FOUND, {
+          userId,
+        });
+      }
+
+      return user.referredUsers;
+    } catch (error) {
+      if (error.name === "CastError") {
+        throw new AppError(
+          "Invalid user ID format",
+          400,
+          ERROR_CODES.BAD_REQUEST,
+          { userId }
+        );
+      }
+      throw new AppError(
+        "Failed to retrieve user affiliates",
+        500,
+        ERROR_CODES.SERVER_ERROR,
+        { originalError: error.message }
+      );
+    }
+  }
 }

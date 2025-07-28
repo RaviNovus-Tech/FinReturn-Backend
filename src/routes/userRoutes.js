@@ -7,5 +7,6 @@ const userService = new UserService();
 const userController = new UserController(userService);
 
 router.get("/", userController.getAllUsers);
+router.get("/:id/affiliates", userController.getUserAffiliatesByID);
 
 export default router;
