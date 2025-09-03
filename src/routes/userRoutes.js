@@ -8,5 +8,6 @@ const userController = new UserController(userService);
 
 router.get("/", userController.getAllUsers);
 router.get("/:id/affiliates", userController.getUserAffiliatesByID);
+router.get("/:id/affiliates/history", userController.getAffiliatesWithHistory);
 
 export default router;

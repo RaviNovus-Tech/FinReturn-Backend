@@ -68,6 +68,7 @@ export default class AuthService {
     }
   }
 
+
   async login(data) {
     const { email, password } = data;
 
