@@ -217,6 +217,7 @@ export default class SubscriptionService {
     const commissionAmount =
       amount * process.env.REFERRAL_EARNINGS_PERCENTAGE || 0.1;
     referredByUser.referralEarnings += commissionAmount; // Assuming 10% commission
+    // referredByUser.totalEarnings += commissionAmount;
     await referredByUser.save();
 
     //create referral earnings record

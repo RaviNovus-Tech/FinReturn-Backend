@@ -2,6 +2,7 @@ import ROIHistory from "../models/ROIHistory.js";
 import { AppError, ValidationError } from "../utils/errors/errors.js";
 import { ERROR_CODES } from "../utils/errors/errorCodes.js";
 import Subscription from "../models/Subscription.js";
+import User from "../models/User.js";
 
 export default class ROIHistoryService {
   async getROIHistoryBySubscription(subscriptionId, page = 1, limit = 10) {
@@ -53,6 +54,11 @@ export default class ROIHistoryService {
         date: payload.date || new Date(),
       });
       await roi.save();
+
+      await User.findByIdAndUpdate(payload.userId, {
+        $inc: { roiEarnings: payload.amount },
+      });
+
       return roi;
     } catch (error) {
       throw new AppError(
