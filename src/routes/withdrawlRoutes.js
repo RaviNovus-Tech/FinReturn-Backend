@@ -47,4 +47,56 @@ router.post(
  */
 router.get("/:userId", withdrawalController.getWithdrawalHistory);
 
+// ============== ADMIN ROUTES ==============
+
+/**
+ * @route   GET /admin/all
+ * @desc    Get all withdrawal requests (Admin only)
+ * @access  Admin
+ */
+router.get("/admin/all", withdrawalController.getAllWithdrawals);
+
+/**
+ * @route   GET /admin/pending
+ * @desc    Get all pending withdrawal requests (Admin only)
+ * @access  Admin
+ */
+router.get("/admin/pending", withdrawalController.getPendingWithdrawals);
+
+/**
+ * @route   PUT /admin/:withdrawalId/status
+ * @desc    Update withdrawal status (Admin only)
+ * @access  Admin
+ */
+router.put(
+  "/admin/:withdrawalId/status",
+  [
+    body("status")
+      .notEmpty()
+      .withMessage("Status is required.")
+      .isIn(["pending", "processing", "completed", "cancelled"])
+      .withMessage("Status must be one of: pending, processing, completed, cancelled"),
+    body("transactionId")
+      .optional()
+      .isString()
+      .withMessage("Transaction ID must be a string"),
+  ],
+  handleValidationErrors,
+  withdrawalController.updateWithdrawalStatus
+);
+
+/**
+ * @route   GET /admin/:withdrawalId
+ * @desc    Get specific withdrawal details (Admin only)
+ * @access  Admin
+ */
+router.get("/admin/:withdrawalId", withdrawalController.getWithdrawalById);
+
+/**
+ * @route   GET /admin/stats
+ * @desc    Get withdrawal statistics (Admin only)
+ * @access  Admin
+ */
+router.get("/admin/stats", withdrawalController.getWithdrawalStats);
+
 export default router;

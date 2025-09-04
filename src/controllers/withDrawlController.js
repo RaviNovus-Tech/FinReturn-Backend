@@ -47,4 +47,105 @@ export default class WithdrawalController {
       "Withdrawal history retrieved successfully."
     );
   });
+
+  // ============== ADMIN METHODS ==============
+
+  /**
+   * @desc    Get all withdrawal requests (Admin only)
+   * @route   GET /api/withdrawals/admin/all
+   * @access  Admin
+   */
+  getAllWithdrawals = asyncHandler(async (req, res) => {
+    const { page, limit, status, sortBy } = req.query;
+    const withdrawals = await this.withdrawalService.getAllWithdrawals({
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10,
+      status,
+      sortBy: sortBy || "createdAt",
+    });
+
+    return ResponseHandler.success(
+      res,
+      withdrawals,
+      "All withdrawals retrieved successfully."
+    );
+  });
+
+  /**
+   * @desc    Get all pending withdrawal requests (Admin only)
+   * @route   GET /api/withdrawals/admin/pending
+   * @access  Admin
+   */
+  getPendingWithdrawals = asyncHandler(async (req, res) => {
+    const { page, limit } = req.query;
+    const withdrawals = await this.withdrawalService.getPendingWithdrawals({
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10,
+    });
+
+    return ResponseHandler.success(
+      res,
+      withdrawals,
+      "Pending withdrawals retrieved successfully."
+    );
+  });
+
+  /**
+   * @desc    Update withdrawal status (Admin only)
+   * @route   PUT /api/withdrawals/admin/:withdrawalId/status
+   * @access  Admin
+   */
+  updateWithdrawalStatus = asyncHandler(async (req, res) => {
+    const { withdrawalId } = req.params;
+    const { status, transactionId } = req.body;
+
+    const withdrawal = await this.withdrawalService.updateWithdrawalStatus(
+      withdrawalId,
+      status,
+      transactionId
+    );
+
+    return ResponseHandler.success(
+      res,
+      withdrawal,
+      `Withdrawal status updated to ${status} successfully.`
+    );
+  });
+
+  /**
+   * @desc    Get specific withdrawal details (Admin only)
+   * @route   GET /api/withdrawals/admin/:withdrawalId
+   * @access  Admin
+   */
+  getWithdrawalById = asyncHandler(async (req, res) => {
+    const { withdrawalId } = req.params;
+    const withdrawal = await this.withdrawalService.getWithdrawalById(
+      withdrawalId
+    );
+
+    return ResponseHandler.success(
+      res,
+      withdrawal,
+      "Withdrawal details retrieved successfully."
+    );
+  });
+
+  /**
+   * @desc    Get withdrawal statistics (Admin only)
+   * @route   GET /api/withdrawals/admin/stats
+   * @access  Admin
+   */
+  getWithdrawalStats = asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
+    const stats = await this.withdrawalService.getWithdrawalStats({
+      startDate,
+      endDate,
+    });
+
+    return ResponseHandler.success(
+      res,
+      stats,
+      "Withdrawal statistics retrieved successfully."
+    );
+  });
 }
