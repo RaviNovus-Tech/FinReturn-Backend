@@ -126,6 +126,14 @@ userSchema.pre("save", async function (next) {
   }
 });
 
+// pre save update anything calculate total earnings = roiEarnings + referralEarnings
+userSchema.pre("save", function (next) {
+  this.totalEarnings = this.roiEarnings + this.referralEarnings;
+  next();
+});
+
+
+
 userSchema.post("findOneAndDelete", async function (doc) {
   if (doc) {
     await Subscription.deleteMany({ userId: doc._id });
