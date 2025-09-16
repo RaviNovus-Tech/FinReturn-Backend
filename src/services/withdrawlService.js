@@ -50,9 +50,11 @@ export default class WithdrawalService {
    * @returns {Promise<Array<object>>} A list of the user's withdrawals.
    */
   async getUserWithdrawals(userId) {
-    const withdrawals = await Withdrawal.find({ userId }).sort({
-      createdAt: -1,
-    });
+    const withdrawals = await Withdrawal.find({ userId })
+      .populate("userId")
+      .sort({
+        createdAt: -1,
+      });
     if (!withdrawals) {
       return [];
     }
