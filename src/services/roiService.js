@@ -80,22 +80,138 @@ export default class ROIHistoryService {
         );
       }
 
-      const preparedEntries = entries.map((entry) => ({
-        userId: entry.userId,
-        subscriptionId: entry.subscriptionId,
-        amount: entry.amount,
-        date: entry.date || new Date(),
-        note: entry.note || "Bulk ROI credit",
-        creditedByAdmin: true,
-      }));
-
-      const result = await ROIHistory.insertMany(preparedEntries);
-
-      return {
-        count: result.length,
-        data: result,
+      const results = {
+        successful: [],
+        failed: [],
+        summary: {
+          totalProcessed: entries.length,
+          successCount: 0,
+          failureCount: 0,
+        },
       };
+
+      // Process each entry individually for better error handling
+      for (const entry of entries) {
+        try {
+          // Validate required fields
+          if (!entry.userId || !entry.subscriptionId || !entry.amount) {
+            results.failed.push({
+              entry,
+              reason:
+                "Missing required fields (userId, subscriptionId, or amount)",
+            });
+            continue;
+          }
+
+          // Check if user exists
+          const user = await User.findById(entry.userId);
+          if (!user) {
+            results.failed.push({
+              entry,
+              reason: `User with ID ${entry.userId} not found`,
+            });
+            continue;
+          }
+
+          // Check if subscription exists and belongs to the user
+          const subscription = await Subscription.findOne({
+            _id: entry.subscriptionId,
+            userId: entry.userId,
+          });
+
+          console.log("***********************8888888888888888888888888888888");
+          console.log(subscription);
+          console.log("***********************8888888888888888888888888888888");
+
+          if (!subscription) {
+            results.failed.push({
+              entry,
+              reason: `Subscription with ID ${entry.subscriptionId} not found or doesn't belong to user ${entry.userId}`,
+            });
+            continue;
+          }
+
+          // Validate subscription status (optional check)
+          if (subscription.status !== "active") {
+            results.failed.push({
+              entry,
+              reason: `Subscription ${entry.subscriptionId} is not active (status: ${subscription.status})`,
+            });
+            continue;
+          }
+
+          // Prepare ROI entry
+          const roiEntry = {
+            userId: entry.userId,
+            subscriptionId: entry.subscriptionId,
+            amount: Number(entry.amount),
+            date: entry.date || new Date(),
+            note: entry.note || "Bulk ROI credit",
+            creditedByAdmin: true,
+          };
+
+          // Create ROI history record
+          const roi = new ROIHistory(roiEntry);
+          await roi.save();
+
+          // Update subscription roiCredited
+          subscription.roiCredited += roiEntry.amount;
+          await subscription.save();
+
+          // Update user roiEarnings
+          await User.findByIdAndUpdate(entry.userId, {
+            $inc: { roiEarnings: roiEntry.amount },
+          });
+
+          results.successful.push({
+            roiId: roi._id,
+            userId: entry.userId,
+            subscriptionId: entry.subscriptionId,
+            amount: roiEntry.amount,
+          });
+
+          results.summary.successCount++;
+        } catch (entryError) {
+          results.failed.push({
+            entry,
+            reason: `Processing error: ${entryError.message}`,
+          });
+        }
+      }
+
+      results.summary.failureCount = results.failed.length;
+
+      // If all entries failed, throw an error
+      if (results.summary.successCount === 0) {
+        throw new AppError(
+          "All ROI credit entries failed",
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          results
+        );
+      }
+
+      // If some entries failed, return partial success with details
+      if (results.summary.failureCount > 0) {
+        const partialError = new AppError(
+          "Some ROI credit entries failed",
+          207, // Multi-Status response
+          ERROR_CODES.PARTIAL_SUCCESS,
+          results
+        );
+        partialError.isPartialSuccess = true;
+        throw partialError;
+      }
+
+      // All entries succeeded
+      return results;
     } catch (error) {
+      // If it's already a handled error, re-throw
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      // For unexpected errors
       throw new AppError(
         "Bulk ROI credit failed",
         500,
@@ -120,10 +236,11 @@ export default class ROIHistoryService {
         );
       }
       subscription.roiCredited -= roi.amount;
-      await subscription.save();
-      if (!subscription.roiCredited) {
+      // Ensure roiCredited doesn't go below 0
+      if (subscription.roiCredited < 0) {
         subscription.roiCredited = 0;
       }
+      await subscription.save();
 
       return roi;
     } catch (error) {

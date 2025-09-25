@@ -46,12 +46,12 @@ app.use(helmet());
 app.use(hpp());
 
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 mins
-  max: 100,
-});
+// const limiter = rateLimit({
+//   windowMs: 10 * 60 * 1000, // 10 mins
+//   max: 100,
+// });
 
-app.use(limiter);
+// app.use(limiter);
 
 connectDB();
 

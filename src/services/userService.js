@@ -2,15 +2,42 @@ import User from "../models/User.js";
 import { ERROR_CODES } from "../utils/errors/errorCodes.js";
 import { AppError } from "../utils/errors/errors.js";
 import ReferralEarnings from "../models/ReferralEarnings.js";
+import Subscription from "../models/Subscription.js";
 
 export default class UserService {
   async getAllUsers() {
     try {
       const users = await User.find();
-      return users;
+
+      // Get all subscriptions for all users
+      const userIds = users.map((user) => user._id);
+      const subscriptions = await Subscription.find({
+        userId: { $in: userIds },
+      }).populate("packageId", "name price duration");
+
+      // Create a map for quick lookup
+      const subscriptionMap = subscriptions.reduce((map, sub) => {
+        if (!map[sub.userId]) {
+          map[sub.userId] = [];
+        }
+        map[sub.userId].push(sub);
+        return map;
+      }, {});
+
+      // Add subscription info to each user without modifying the original structure
+      const usersWithSubscriptions = users.map((user) => ({
+        ...user.toObject(),
+        subscriptions: subscriptionMap[user._id] || [],
+        activeSubscription:
+          subscriptionMap[user._id]?.find((sub) => sub.status === "active") ||
+          null,
+        subscriptionCount: subscriptionMap[user._id]?.length || 0,
+      }));
+
+      return usersWithSubscriptions;
     } catch (error) {
       throw new AppError(
-        "Failed to retrieve users",
+        "Failed to retrieve users with subscriptions",
         500,
         ERROR_CODES.SERVER_ERROR,
         {
